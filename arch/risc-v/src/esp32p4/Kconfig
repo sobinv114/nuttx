@@ -9,7 +9,7 @@ source "arch/risc-v/src/common/espressif/Kconfig"
 
 config ESP32P4_SELECTS_REV_LESS_V3
 	bool "Select ESP32-P4 revisions <3.0 (No >=3.x Support)"
-	default n
+	default y
 	---help---
 		Select this option to support ESP32-P4 revisions 0.x and 1.x.
 		Revisions higher than 3.0 (included) and revisions less than 3.0
@@ -18,7 +18,7 @@ config ESP32P4_SELECTS_REV_LESS_V3
 
 choice ESP32P4_REV_MIN
 	prompt "Minimum Supported ESP32-P4 Revision"
-	default ESP32P4_REV_MIN_301
+	default ESP32P4_REV_MIN_100
 	---help---
 		Required minimum chip revision. ESP-IDF will check for it and
 		reject to boot if the chip revision fails the check.
@@ -47,6 +47,10 @@ config ESP32P4_REV_MIN_301
 	bool "Rev v3.1"
 	depends on !ESP32P4_SELECTS_REV_LESS_V3
 
+config ESP32P4_REV_MIN_302
+	bool "Rev v3.2"
+	depends on !ESP32P4_SELECTS_REV_LESS_V3
+
 endchoice # ESP32P4_REV_MIN
 
 config ESP32P4_REV_MIN_FULL
@@ -56,6 +60,7 @@ config ESP32P4_REV_MIN_FULL
 	default 100 if ESP32P4_REV_MIN_100
 	default 300 if ESP32P4_REV_MIN_300
 	default 301 if ESP32P4_REV_MIN_301
+	default 302 if ESP32P4_REV_MIN_302
 
 config ESP_REV_MIN_FULL
 	int
@@ -153,3 +158,45 @@ config P4_REV3_MSPI_WORKAROUND_SIZE
 	hex
 	default 0x100 if ESP32P4_REV_MIN_300
 	default 0
+
+
+menuconfig ESP32P4_SDMMC
+	bool "SDMMC Host Driver"
+	default n
+	select ARCH_HAVE_SDIO
+	select MMCSD
+	select MMCSD_SDIO
+	select SDIO_DMA if ESP32P4_SDMMC_DMA
+	select SDIO_HAVE_CALLBACK
+
+if ESP32P4_SDMMC
+
+config ESP32P4_SDMMC_DMA
+	bool "Support DMA data transfers"
+	default y
+
+config ESP32P4_SDMMC_CLK
+	int "SDMMC CLK Pin"
+	default 43
+
+config ESP32P4_SDMMC_CMD
+	int "SDMMC CMD Pin"
+	default 44
+
+config ESP32P4_SDMMC_D0
+	int "SDMMC D0 Pin"
+	default 39
+
+config ESP32P4_SDMMC_D1
+	int "SDMMC D1 Pin"
+	default 40
+
+config ESP32P4_SDMMC_D2
+	int "SDMMC D2 Pin"
+	default 41
+
+config ESP32P4_SDMMC_D3
+	int "SDMMC D3 Pin"
+	default 42
+
+endif # ESP32P4_SDMMC

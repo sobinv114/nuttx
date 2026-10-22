@@ -29,3 +29,8 @@ CFLAGS += ${DEFINE_PREFIX}_RETARGETABLE_LOCKING
 
 # TODO: Remove these flags once ulp/lp_core/lp_core.c is updated.
 CFLAGS += -Wno-array-bounds -Wno-stringop-overflow
+
+
+ifeq ($(CONFIG_ESP32P4_SDMMC),y)
+  CHIP_CSRCS += esp32p4_sdmmc.c
+endif

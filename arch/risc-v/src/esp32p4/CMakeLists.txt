@@ -28,6 +28,10 @@ set(SRCS esp_chip_rev.c)
 target_compile_definitions(arch PRIVATE _RETARGETABLE_LOCKING)
 target_compile_options(arch PRIVATE -Wno-array-bounds -Wno-stringop-overflow)
 
+if(CONFIG_ESP32P4_SDMMC)
+  list(APPEND SRCS esp32p4_sdmmc.c)
+endif()
+
 if(SRCS)
   target_sources(arch PRIVATE ${SRCS})
 endif()

@@ -3,11 +3,10 @@
 # see the file kconfig-language.txt in the NuttX tools repository.
 #
 
-if ARCH_CHIP_ESP32C2 || ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32H2 || ARCH_CHIP_ESP32P4
+if ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32H2 || ARCH_CHIP_ESP32P4
 
 config ESPRESSIF_CHIP_SERIES
 	string
-	default "esp32c2" if ARCH_CHIP_ESP32C2
 	default "esp32c3" if ARCH_CHIP_ESP32C3
 	default "esp32c6" if ARCH_CHIP_ESP32C6
 	default "esp32h2" if ARCH_CHIP_ESP32H2
@@ -16,8 +15,7 @@ config ESPRESSIF_CHIP_SERIES
 
 choice ESPRESSIF_FLASH
 	prompt "Flash Size"
-	default ESPRESSIF_FLASH_2M if ARCH_CHIP_ESP32C2
-	default ESPRESSIF_FLASH_4M if ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32H2 || ARCH_CHIP_ESP32P4
+	default ESPRESSIF_FLASH_32M if ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32H2 || ARCH_CHIP_ESP32P4
 
 config ESPRESSIF_FLASH_2M
 	bool "2 MB"
@@ -148,20 +146,19 @@ config ESPRESSIF_IDF_ENV_FPGA
 
 config ESPRESSIF_FLASH_DETECT
 	bool "Auto-detect FLASH size"
-	default n
+	default y
 	---help---
 		Auto detect flash size when flashing.
 
 config ESPRESSIF_NUM_CPUS
 	int
-	default 1 if ARCH_CHIP_ESP32C2 || ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32H2
+	default 1 if ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32H2
 	default 2 if ARCH_CHIP_ESP32P4
 
 choice ESPRESSIF_CPU_FREQ
 	prompt "CPU frequency"
 	default ESPRESSIF_CPU_FREQ_40 if ARCH_CHIP_ESP32P4 && ESPRESSIF_IDF_ENV_FPGA
 	default ESPRESSIF_CPU_FREQ_96 if ARCH_CHIP_ESP32H2
-	default ESPRESSIF_CPU_FREQ_120 if ARCH_CHIP_ESP32C2
 	default ESPRESSIF_CPU_FREQ_160 if ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6
 	default ESPRESSIF_CPU_FREQ_360 if ARCH_CHIP_ESP32P4 && ESP32P4_SELECTS_REV_LESS_V3
 	default ESPRESSIF_CPU_FREQ_400 if ARCH_CHIP_ESP32P4 && !ESP32P4_SELECTS_REV_LESS_V3
@@ -188,7 +185,7 @@ config ESPRESSIF_CPU_FREQ_64
 
 config ESPRESSIF_CPU_FREQ_80
 	bool "80 MHz"
-	depends on ARCH_CHIP_ESP32C2 || ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6
+	depends on ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6
 	---help---
 		Set the CPU frequency to 80 MHz.
 
@@ -197,12 +194,6 @@ config ESPRESSIF_CPU_FREQ_96
 	depends on ARCH_CHIP_ESP32H2
 	---help---
 		Set the CPU frequency to 96 MHz.
-
-config ESPRESSIF_CPU_FREQ_120
-	bool "120 MHz"
-	depends on ARCH_CHIP_ESP32C2
-	---help---
-		Set the CPU frequency to 120 MHz.
 
 config ESPRESSIF_CPU_FREQ_160
 	bool "160 MHz"
@@ -231,29 +222,9 @@ config ESPRESSIF_CPU_FREQ_MHZ
 	default 64 if ESPRESSIF_CPU_FREQ_64
 	default 80 if ESPRESSIF_CPU_FREQ_80
 	default 96 if ESPRESSIF_CPU_FREQ_96
-	default 120 if ESPRESSIF_CPU_FREQ_120
 	default 160 if ESPRESSIF_CPU_FREQ_160
 	default 360 if ESPRESSIF_CPU_FREQ_360
 	default 400 if ESPRESSIF_CPU_FREQ_400
-
-if ARCH_CHIP_ESP32C2
-
-choice ESPRESSIF_XTAL_FREQ
-	prompt "Main XTAL frequency"
-	default ESPRESSIF_XTAL_FREQ_26M
-	---help---
-		Operating frequency of the main crystal (XTAL) clock.
-		Must match the hardware crystal. ESP8684-MINI-1 modules use 26 MHz.
-
-config ESPRESSIF_XTAL_FREQ_26M
-	bool "26 MHz"
-
-config ESPRESSIF_XTAL_FREQ_40M
-	bool "40 MHz"
-
-endchoice # ESPRESSIF_XTAL_FREQ
-
-endif # ARCH_CHIP_ESP32C2
 
 config ESPRESSIF_DFS
 	bool "Enable DFS (Dynamic Frequency Scaling)"
@@ -262,7 +233,7 @@ config ESPRESSIF_DFS
 
 config ESPRESSIF_REGION_PROTECTION
 	bool "Enable region protection"
-	default y
+	default n
 	select ARCH_USE_MPU
 	---help---
 		Configure the MPU to disable access to invalid memory regions.
@@ -443,7 +414,7 @@ endmenu # Espressif Log Level
 menu "Bootloader and Image Configuration"
 
 config ESPRESSIF_SIMPLE_BOOT
-	bool
+	bool "Enable Simple Boot"
 	depends on !ESPRESSIF_BOOTLOADER_MCUBOOT
 	default y
 
@@ -1641,14 +1612,35 @@ config ESPRESSIF_UART0
 
 config ESPRESSIF_UART1
 	bool "UART1"
-	default n
+	default y
 	select ESPRESSIF_UART
 	select UART1_SERIALDRIVER
 	select ARCH_HAVE_SERIAL_TERMIOS
 
+config ESPRESSIF_UART2
+	bool "UART2"
+	default y
+	select ESPRESSIF_UART
+	select UART2_SERIALDRIVER
+	select ARCH_HAVE_SERIAL_TERMIOS
+
+config ESPRESSIF_UART3
+	bool "UART3"
+	default y
+	select ESPRESSIF_UART
+	select UART3_SERIALDRIVER
+	select ARCH_HAVE_SERIAL_TERMIOS
+
+config ESPRESSIF_UART4
+	bool "UART4"
+	default y
+	select ESPRESSIF_UART
+	select UART4_SERIALDRIVER
+	select ARCH_HAVE_SERIAL_TERMIOS
+
 config ESPRESSIF_LP_UART0
 	bool "LP UART0"
-	default n
+	default y
 	depends on ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32P4
 	select ESPRESSIF_UART
 	select ESPRESSIF_LP_UART
@@ -1691,7 +1683,7 @@ config ESPRESSIF_USBSERIAL
 
 config ESPRESSIF_DEDICATED_GPIO
 	bool "Dedicated GPIO"
-	default n
+	default y
 	---help---
 		Enable dedicated GPIO support for faster response time.
 		Dedicated GPIO is suitable for faster response times required
@@ -1701,7 +1693,7 @@ config ESPRESSIF_DEDICATED_GPIO
 
 config ESPRESSIF_GPIO_IRQ
 	bool "GPIO pin interrupts"
-	default n
+	default y
 	---help---
 		Enable support for interrupting GPIO pins
 
@@ -1714,8 +1706,9 @@ config ESPRESSIF_RTCIO_IRQ
 
 config ESPRESSIF_LEDC
 	bool "LEDC (PWM)"
-	default n
+	default y
 	select PWM
+	select ARCH_HAVE_PWM_MULTICHAN
 
 config ESPRESSIF_SHA_ACCELERATOR
 	bool "SHA Accelerator"
@@ -1738,7 +1731,7 @@ config ESPRESSIF_TOUCH
 
 config ESPRESSIF_ANA_COMPR
 	bool
-	default n
+	default y
 	select COMP
 	select ANALOG
 
@@ -1767,7 +1760,7 @@ config ESPRESSIF_LP_MAILBOX
 
 config ESPRESSIF_ADC
 	bool "Analog-to-digital converter (ADC)"
-	default n
+	default y
 	select ANALOG
 	select ADC
 	---help---
@@ -1785,7 +1778,7 @@ config ESPRESSIF_ADC_1_USE_LP
 	bool "Use ADC 1 as LP ADC"
 
 config ESPRESSIF_ADC_2
-	default n
+	default y
 	depends on ARCH_CHIP_ESP32P4
 	bool "Enable SAR ADC 2"
 
@@ -1806,11 +1799,11 @@ config ESPRESSIF_I2S0
 
 config ESPRESSIF_I2C
 	bool
-	default n
+	default y
 
 config ESPRESSIF_LPI2C
 	bool
-	default n
+	default y
 
 config ESPRESSIF_I2C_PERIPH_MASTER_MODE
 	bool
@@ -1824,20 +1817,20 @@ config ESPRESSIF_I2C_PERIPH_SLAVE_MODE
 
 config ESPRESSIF_I2C0
 	bool "I2C 0"
-	default n
+	default y
 	select ESPRESSIF_I2C
 	select I2C
 
 config ESPRESSIF_I2C1
 	bool "I2C 1"
-	default n
+	default y
 	depends on (ARCH_CHIP_ESP32H2 || ARCH_CHIP_ESP32P4)
 	select ESPRESSIF_I2C
 	select I2C
 
 config ESPRESSIF_LP_I2C0
 	bool "LP I2C 0"
-	default n
+	default y
 	depends on ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32P4
 	select ESPRESSIF_I2C
 	select ESPRESSIF_LPI2C
@@ -1856,7 +1849,7 @@ config ESPRESSIF_I2C_BITBANG
 
 config ESPRESSIF_SPI
 	bool
-	default n
+	default y
 
 config ESPRESSIF_SPI_SLAVE
 	bool
@@ -1865,11 +1858,11 @@ config ESPRESSIF_SPI_SLAVE
 config ESPRESSIF_SPI_PERIPH
 	bool
 	depends on ESPRESSIF_SPI2 || ESPRESSIF_SPI3 || ESPRESSIF_LPSPI0
-	default n
+	default y
 
 config ESPRESSIF_SPI2
 	bool "SPI 2"
-	default n
+	default y
 	select ESPRESSIF_SPI
 	select SPI
 	select ESPRESSIF_SPI_PERIPH
@@ -1877,7 +1870,7 @@ config ESPRESSIF_SPI2
 config ESPRESSIF_SPI3
 	bool "SPI 3"
 	depends on ARCH_CHIP_ESP32P4
-	default n
+	default y
 	select ESPRESSIF_SPI
 	select SPI
 	select ESPRESSIF_SPI_PERIPH
@@ -1901,14 +1894,14 @@ config ESPRESSIF_SPI_BITBANG
 
 config ESPRESSIF_SPIFLASH
 	bool "SPI Flash (User Storage)"
-	default n
+	default y
 	---help---
 		Enable SPI Flash driver for general storage support. This allows
 		mounting an MTD partition at a configurable region in flash.
 
 config ESPRESSIF_DMA
 	bool "General DMA (GDMA)"
-	default n
+	default y
 	select ARCH_DMA
 
 config ESPRESSIF_EFUSE
@@ -1945,7 +1938,6 @@ config ESPRESSIF_EFUSE_VIRTUAL_KEEP_IN_FLASH_OFFSET
 	hex "E-Fuses offset in flash"
 	depends on ESPRESSIF_EFUSE_VIRTUAL_KEEP_IN_FLASH
 	default 0x10000 if ESPRESSIF_BOOTLOADER_MCUBOOT
-	default 0x100000 if ESPRESSIF_FLASH_2M
 	default 0x250000 if !ESPRESSIF_BOOTLOADER_MCUBOOT
 	---help---
 		Offset in flash where the E-Fuses will be stored when using the "E-Fuses size to keep in flash" option.
@@ -1970,7 +1962,7 @@ config ESPRESSIF_HR_TIMER
 
 config ESPRESSIF_WDT
 	bool
-	default n
+	default y
 	select WATCHDOG
 
 config ESPRESSIF_MWDT0
@@ -1991,7 +1983,7 @@ config ESPRESSIF_MWDT1
 
 config ESPRESSIF_RWDT
 	bool "RTC Watchdog Timer"
-	default n
+	default y
 	select ESPRESSIF_WDT
 	---help---
 		Includes RWDT. This watchdog timer is from the RTC module.
@@ -2092,7 +2084,7 @@ config ESPRESSIF_WIRELESS
 
 config ESPRESSIF_WIFI
 	bool "Wi-Fi"
-	depends on ARCH_CHIP_ESP32C2 || ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6
+	depends on ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6
 	default n
 	select ESPRESSIF_WIRELESS
 	---help---
@@ -3304,12 +3296,10 @@ config ESPRESSIF_UART0_RS485_DIR_POLARITY
 
 config ESPRESSIF_UART0_TXPIN
 	int "UART0 TX Pin"
-	default 20 if ARCH_CHIP_ESP32C2
 	default 21 if ARCH_CHIP_ESP32C3
 	default 16 if ARCH_CHIP_ESP32C6
 	default 24 if ARCH_CHIP_ESP32H2
 	default 37 if ARCH_CHIP_ESP32P4
-	range 0 20 if ARCH_CHIP_ESP32C2
 	range 0 21 if ARCH_CHIP_ESP32C3
 	range 0 30 if ARCH_CHIP_ESP32C6
 	range 0 27 if ARCH_CHIP_ESP32H2
@@ -3317,12 +3307,10 @@ config ESPRESSIF_UART0_TXPIN
 
 config ESPRESSIF_UART0_RXPIN
 	int "UART0 RX Pin"
-	default 19 if ARCH_CHIP_ESP32C2
 	default 20 if ARCH_CHIP_ESP32C3
 	default 17 if ARCH_CHIP_ESP32C6
 	default 23 if ARCH_CHIP_ESP32H2
 	default 38 if ARCH_CHIP_ESP32P4
-	range 0 20 if ARCH_CHIP_ESP32C2
 	range 0 21 if ARCH_CHIP_ESP32C3
 	range 0 30 if ARCH_CHIP_ESP32C6
 	range 0 27 if ARCH_CHIP_ESP32H2
@@ -3331,12 +3319,10 @@ config ESPRESSIF_UART0_RXPIN
 config ESPRESSIF_UART0_RTSPIN
 	int "UART0 RTS Pin"
 	depends on SERIAL_IFLOWCONTROL
-	default 18 if ARCH_CHIP_ESP32C2
 	default 16 if ARCH_CHIP_ESP32C3
 	default 15 if ARCH_CHIP_ESP32C6
 	default 22 if ARCH_CHIP_ESP32H2
 	default 35 if ARCH_CHIP_ESP32P4
-	range 0 20 if ARCH_CHIP_ESP32C2
 	range 0 21 if ARCH_CHIP_ESP32C3
 	range 0 30 if ARCH_CHIP_ESP32C6
 	range 0 27 if ARCH_CHIP_ESP32H2
@@ -3345,12 +3331,10 @@ config ESPRESSIF_UART0_RTSPIN
 config ESPRESSIF_UART0_CTSPIN
 	int "UART0 CTS Pin"
 	depends on SERIAL_OFLOWCONTROL
-	default 19 if ARCH_CHIP_ESP32C2
 	default 15 if ARCH_CHIP_ESP32C3
 	default 14 if ARCH_CHIP_ESP32C6
 	default 21 if ARCH_CHIP_ESP32H2
 	default 36 if ARCH_CHIP_ESP32P4
-	range 0 20 if ARCH_CHIP_ESP32C2
 	range 0 21 if ARCH_CHIP_ESP32C3
 	range 0 30 if ARCH_CHIP_ESP32C6
 	range 0 27 if ARCH_CHIP_ESP32H2
@@ -3390,27 +3374,16 @@ config ESPRESSIF_UART1_RS485_DIR_POLARITY
 
 config ESPRESSIF_UART1_TXPIN
 	int "UART1 TX Pin"
-	default 8 if ARCH_CHIP_ESP32C2 || ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32H2 || ARCH_CHIP_ESP32P4
-	range 0 20 if ARCH_CHIP_ESP32C2
-	range 0 21 if ARCH_CHIP_ESP32C3
-	range 0 30 if ARCH_CHIP_ESP32C6
-	range 0 27 if ARCH_CHIP_ESP32H2
-	range 0 54 if ARCH_CHIP_ESP32P4
+	default 4 if ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32H2 || ARCH_CHIP_ESP32P4
 
 config ESPRESSIF_UART1_RXPIN
 	int "UART1 RX Pin"
-	default 9 if ARCH_CHIP_ESP32C2 || ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32H2 || ARCH_CHIP_ESP32P4
-	range 0 20 if ARCH_CHIP_ESP32C2
-	range 0 21 if ARCH_CHIP_ESP32C3
-	range 0 30 if ARCH_CHIP_ESP32C6
-	range 0 27 if ARCH_CHIP_ESP32H2
-	range 0 54 if ARCH_CHIP_ESP32P4
+	default 5 if ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32H2 || ARCH_CHIP_ESP32P4
 
 config ESPRESSIF_UART1_RTSPIN
 	int "UART1 RTS Pin"
 	depends on SERIAL_IFLOWCONTROL
-	default 1 if ARCH_CHIP_ESP32C2 || ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32H2 || ARCH_CHIP_ESP32P4
-	range 0 20 if ARCH_CHIP_ESP32C2
+	default 1 if ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32H2 || ARCH_CHIP_ESP32P4
 	range 0 21 if ARCH_CHIP_ESP32C3
 	range 0 30 if ARCH_CHIP_ESP32C6
 	range 0 27 if ARCH_CHIP_ESP32H2
@@ -3419,8 +3392,7 @@ config ESPRESSIF_UART1_RTSPIN
 config ESPRESSIF_UART1_CTSPIN
 	int "UART1 CTS Pin"
 	depends on SERIAL_OFLOWCONTROL
-	default 2 if ARCH_CHIP_ESP32C2 || ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32H2
-	range 0 20 if ARCH_CHIP_ESP32C2
+	default 2 if ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32H2
 	range 0 21 if ARCH_CHIP_ESP32C3
 	range 0 30 if ARCH_CHIP_ESP32C6
 	range 0 27 if ARCH_CHIP_ESP32H2
@@ -3433,14 +3405,14 @@ if ESPRESSIF_LP_UART0
 config ESPRESSIF_LPUART0_TXPIN
 	int "LPUART0 TX Pin"
 	default 5 if ARCH_CHIP_ESP32C6
-	default 14 if ARCH_CHIP_ESP32P4
+	default 2 if ARCH_CHIP_ESP32P4
 	range 0 15 if ARCH_CHIP_ESP32P4
 	range 5 5 if ARCH_CHIP_ESP32C6
 
 config ESPRESSIF_LPUART0_RXPIN
 	int "LPUART0 RX Pin"
 	default 4 if ARCH_CHIP_ESP32C6
-	default 15 if ARCH_CHIP_ESP32P4
+	default 3 if ARCH_CHIP_ESP32P4
 	range 0 15 if ARCH_CHIP_ESP32P4
 	range 4 4 if ARCH_CHIP_ESP32C6
 
@@ -3457,6 +3429,86 @@ config ESPRESSIF_LPUART0_CTSPIN
 	default -1 if ARCH_CHIP_ESP32P4
 
 endif # ESPRESSIF_LP_UART0
+
+
+if ESPRESSIF_UART2
+
+config ESPRESSIF_UART2_TXPIN
+	int "UART2 TX Pin"
+	default 46
+	range 0 54 if ARCH_CHIP_ESP32P4
+
+config ESPRESSIF_UART2_RXPIN
+	int "UART2 RX Pin"
+	default 47
+	range 0 54 if ARCH_CHIP_ESP32P4
+
+config ESPRESSIF_UART2_RTSPIN
+	int "UART2 RTS Pin"
+	depends on SERIAL_IFLOWCONTROL
+	default 12
+	range 0 54 if ARCH_CHIP_ESP32P4
+
+config ESPRESSIF_UART2_CTSPIN
+	int "UART2 CTS Pin"
+	depends on SERIAL_OFLOWCONTROL
+	default 13
+	range 0 54 if ARCH_CHIP_ESP32P4
+
+endif # ESPRESSIF_UART2
+
+if ESPRESSIF_UART3
+
+config ESPRESSIF_UART3_TXPIN
+	int "UART3 TX Pin"
+	default 48
+	range 0 54 if ARCH_CHIP_ESP32P4
+
+config ESPRESSIF_UART3_RXPIN
+	int "UART3 RX Pin"
+	default 49
+	range 0 54 if ARCH_CHIP_ESP32P4
+
+config ESPRESSIF_UART3_RTSPIN
+	int "UART3 RTS Pin"
+	depends on SERIAL_IFLOWCONTROL
+	default 16
+	range 0 54 if ARCH_CHIP_ESP32P4
+
+config ESPRESSIF_UART3_CTSPIN
+	int "UART3 CTS Pin"
+	depends on SERIAL_OFLOWCONTROL
+	default 17
+	range 0 54 if ARCH_CHIP_ESP32P4
+
+endif # ESPRESSIF_UART3
+
+if ESPRESSIF_UART4
+
+config ESPRESSIF_UART4_TXPIN
+	int "UART4 TX Pin"
+	default 51
+	range 0 54 if ARCH_CHIP_ESP32P4
+
+config ESPRESSIF_UART4_RXPIN
+	int "UART4 RX Pin"
+	default 52
+	range 0 54 if ARCH_CHIP_ESP32P4
+
+config ESPRESSIF_UART4_RTSPIN
+	int "UART4 RTS Pin"
+	depends on SERIAL_IFLOWCONTROL
+	default 20
+	range 0 54 if ARCH_CHIP_ESP32P4
+
+config ESPRESSIF_UART4_CTSPIN
+	int "UART4 CTS Pin"
+	depends on SERIAL_OFLOWCONTROL
+	default 21
+	range 0 54 if ARCH_CHIP_ESP32P4
+
+endif # ESPRESSIF_UART4
+
 
 endmenu # UART Configuration
 
@@ -3493,6 +3545,9 @@ config TWAI0_TIMING_500KBITS
 
 config TWAI0_TIMING_800KBITS
 	bool "800 KBits"
+
+config TWAI0_TIMING_1MBITS
+	bool "1 MBits"
 
 endchoice # ESPRESSIF_TWAI0_TIMING
 
@@ -3536,6 +3591,9 @@ config TWAI1_TIMING_500KBITS
 config TWAI1_TIMING_800KBITS
 	bool "800 KBits"
 
+config TWAI1_TIMING_1MBITS
+	bool "1 MBits"
+
 endchoice # ESPRESSIF_TWAI1_TIMING
 
 config ESPRESSIF_TWAI1_SAM
@@ -3577,6 +3635,9 @@ config TWAI2_TIMING_500KBITS
 
 config TWAI2_TIMING_800KBITS
 	bool "800 KBits"
+
+config TWAI2_TIMING_1MBITS
+	bool "1 MBits"
 
 endchoice # ESPRESSIF_TWAI2_TIMING
 
@@ -3672,12 +3733,10 @@ config ESPRESSIF_SPI2_SLAVE_BUFSIZE
 
 config ESPRESSIF_SPI2_CSPIN
 	int "SPI2 CS Pin"
-	default 10 if ARCH_CHIP_ESP32C2
 	default 10 if ARCH_CHIP_ESP32C3
 	default 16 if ARCH_CHIP_ESP32C6
 	default 1 if ARCH_CHIP_ESP32H2
 	default 28 if ARCH_CHIP_ESP32P4
-	range 0 20 if ARCH_CHIP_ESP32C2
 	range 0 21 if ARCH_CHIP_ESP32C3
 	range 0 30 if ARCH_CHIP_ESP32C6
 	range 0 27 if ARCH_CHIP_ESP32H2
@@ -3685,12 +3744,10 @@ config ESPRESSIF_SPI2_CSPIN
 
 config ESPRESSIF_SPI2_CLKPIN
 	int "SPI2 CLK Pin"
-	default 6 if ARCH_CHIP_ESP32C2
 	default 6 if ARCH_CHIP_ESP32C3
 	default 6 if ARCH_CHIP_ESP32C6
 	default 4 if ARCH_CHIP_ESP32H2
 	default 30 if ARCH_CHIP_ESP32P4
-	range 0 20 if ARCH_CHIP_ESP32C2
 	range 0 21 if ARCH_CHIP_ESP32C3
 	range 0 30 if ARCH_CHIP_ESP32C6
 	range 0 27 if ARCH_CHIP_ESP32H2
@@ -3698,12 +3755,10 @@ config ESPRESSIF_SPI2_CLKPIN
 
 config ESPRESSIF_SPI2_MOSIPIN
 	int "SPI2 MOSI Pin"
-	default 7 if ARCH_CHIP_ESP32C2
 	default 7 if ARCH_CHIP_ESP32C3
 	default 7 if ARCH_CHIP_ESP32C6
 	default 5 if ARCH_CHIP_ESP32H2
 	default 29 if ARCH_CHIP_ESP32P4
-	range 0 20 if ARCH_CHIP_ESP32C2
 	range 0 21 if ARCH_CHIP_ESP32C3
 	range 0 30 if ARCH_CHIP_ESP32C6
 	range 0 27 if ARCH_CHIP_ESP32H2
@@ -3711,12 +3766,10 @@ config ESPRESSIF_SPI2_MOSIPIN
 
 config ESPRESSIF_SPI2_MISOPIN
 	int "SPI2 MISO Pin"
-	default 2 if ARCH_CHIP_ESP32C2
 	default 2 if ARCH_CHIP_ESP32C3
 	default 2 if ARCH_CHIP_ESP32C6
 	default 0 if ARCH_CHIP_ESP32H2
 	default 31 if ARCH_CHIP_ESP32P4
-	range 0 20 if ARCH_CHIP_ESP32C2
 	range 0 21 if ARCH_CHIP_ESP32C3
 	range 0 30 if ARCH_CHIP_ESP32C6
 	range 0 27 if ARCH_CHIP_ESP32H2
@@ -3783,7 +3836,7 @@ config ESPRESSIF_SPI3_CSPIN
 
 config ESPRESSIF_SPI3_CLKPIN
 	int "SPI3 CLK Pin"
-	default 22 if ARCH_CHIP_ESP32P4
+	default 26 if ARCH_CHIP_ESP32P4
 	range 0 54 if ARCH_CHIP_ESP32P4
 
 config ESPRESSIF_SPI3_MOSIPIN
@@ -3941,7 +3994,6 @@ choice ESPRESSIF_FLASH_FREQ
 	default ESPRESSIF_FLASH_FREQ_40M if ESP32P4_REV_MIN_0
 	default ESPRESSIF_FLASH_FREQ_40M if ARCH_CHIP_ESP32P4 && ESPRESSIF_IDF_ENV_FPGA
 	default ESPRESSIF_FLASH_FREQ_80M if ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32P4
-	default ESPRESSIF_FLASH_FREQ_60M if ARCH_CHIP_ESP32C2
 	default ESPRESSIF_FLASH_FREQ_64M if ARCH_CHIP_ESP32H2
 	---help---
 		SPI Flash frequency.
@@ -3955,14 +4007,6 @@ config ESPRESSIF_FLASH_FREQ_64M
 	bool "64 MHz"
 	depends on ARCH_CHIP_ESP32H2
 
-config ESPRESSIF_FLASH_FREQ_60M
-	bool "60 MHz"
-	depends on ARCH_CHIP_ESP32C2
-
-config ESPRESSIF_FLASH_FREQ_30M
-	bool "30 MHz"
-	depends on ARCH_CHIP_ESP32C2
-
 config ESPRESSIF_FLASH_FREQ_40M
 	bool "40 MHz"
 	depends on ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32P4
@@ -3973,11 +4017,7 @@ config ESPRESSIF_FLASH_FREQ_26M
 
 config ESPRESSIF_FLASH_FREQ_20M
 	bool "20 MHz"
-	depends on ARCH_CHIP_ESP32C2 || ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32P4
-
-config ESPRESSIF_FLASH_FREQ_15M
-	bool "15 MHz"
-	depends on ARCH_CHIP_ESP32C2
+	depends on ARCH_CHIP_ESP32C3 || ARCH_CHIP_ESP32C6 || ARCH_CHIP_ESP32P4
 
 endchoice # ESPRESSIF_FLASH_FREQ
 
@@ -3996,7 +4036,6 @@ config ESPRESSIF_FLASH_FREQ
 	default '40m' if ESPRESSIF_FLASH_FREQ_40M
 	default '26m' if ESPRESSIF_FLASH_FREQ_26M
 	default '20m' if ESPRESSIF_FLASH_FREQ_20M
-	default '15m' if ESPRESSIF_FLASH_FREQ_15M
 	default '12m' if ESPRESSIF_FLASH_FREQ_16M
 	default '20m' # if no clock can match in bin headers, go with minimal.
 
@@ -4041,7 +4080,7 @@ config ESPRESSIF_SPIFLASH_MTD_BLKSIZE
 
 config ESPRESSIF_STORAGE_MTD_DEBUG
 	bool "Storage MTD Debug"
-	default n
+	default y
 	depends on ESPRESSIF_MTD && DEBUG_FS_INFO
 	---help---
 		If this option is enabled, Storage MTD driver read and write functions
@@ -4049,16 +4088,14 @@ config ESPRESSIF_STORAGE_MTD_DEBUG
 
 config ESPRESSIF_STORAGE_MTD_OFFSET
 	hex "Storage MTD base address in SPI Flash"
+	default 0x330000 if !ESPRESSIF_BOOTLOADER_MCUBOOT
 	default 0x300000 if ESPRESSIF_BOOTLOADER_MCUBOOT
-	default 0x110000 if ESPRESSIF_FLASH_2M
-	default 0x180000 if !ESPRESSIF_BOOTLOADER_MCUBOOT
 	depends on ESPRESSIF_MTD
 	---help---
 		MTD base address in SPI Flash.
 
 config ESPRESSIF_STORAGE_MTD_SIZE
 	hex "Storage MTD size in SPI Flash"
-	default 0xf0000 if ESPRESSIF_FLASH_2M
 	default 0x100000
 	depends on ESPRESSIF_MTD
 	---help---
@@ -4120,7 +4157,7 @@ config ESPRESSIF_LEDC_HPOINT
 
 menuconfig ESPRESSIF_LEDC_TIMER0
 	bool "Timer 0"
-	default n
+	default y
 
 if ESPRESSIF_LEDC_TIMER0
 
@@ -4144,7 +4181,7 @@ endif # ESPRESSIF_LEDC_TIMER0
 
 menuconfig ESPRESSIF_LEDC_TIMER1
 	bool "Timer 1"
-	default n
+	default y
 
 if ESPRESSIF_LEDC_TIMER1
 
@@ -4168,7 +4205,7 @@ endif # ESPRESSIF_LEDC_TIMER1
 
 menuconfig ESPRESSIF_LEDC_TIMER2
 	bool "Timer 2"
-	default n
+	default y
 
 if ESPRESSIF_LEDC_TIMER2
 
@@ -4192,7 +4229,7 @@ endif # ESPRESSIF_LEDC_TIMER2
 
 menuconfig ESPRESSIF_LEDC_TIMER3
 	bool "Timer 3"
-	default n
+	default y
 
 if ESPRESSIF_LEDC_TIMER3
 
@@ -4229,6 +4266,22 @@ config ESPRESSIF_LEDC_CHANNEL2_PIN
 config ESPRESSIF_LEDC_CHANNEL3_PIN
 	int "Channel 3 pin"
 	default 5
+
+config ESPRESSIF_LEDC_CHANNEL4_PIN
+	int "Channel 4 pin"
+	default 14
+
+config ESPRESSIF_LEDC_CHANNEL5_PIN
+	int "Channel 5 pin"
+	default 15
+
+config ESPRESSIF_LEDC_CHANNEL6_PIN
+	int "Channel 6 pin"
+	default 16
+
+config ESPRESSIF_LEDC_CHANNEL7_PIN
+	int "Channel 7 pin"
+	default 17
 
 if PWM_NCHANNELS > 1
 
@@ -4571,7 +4624,7 @@ endchoice # ESPRESSIF_I2C1_MODE
 
 config ESPRESSIF_I2C1_SCLPIN
 	int "I2C1 SCL Pin"
-	default 2
+	default 32
 	range 0 21 if ARCH_CHIP_ESP32C3
 	range 0 30 if ARCH_CHIP_ESP32C6
 	range 0 27 if ARCH_CHIP_ESP32H2
@@ -4579,7 +4632,7 @@ config ESPRESSIF_I2C1_SCLPIN
 
 config ESPRESSIF_I2C1_SDAPIN
 	int "I2C1 SDA Pin"
-	default 1
+	default 33
 	range 0 21 if ARCH_CHIP_ESP32C3
 	range 0 30 if ARCH_CHIP_ESP32C6
 	range 0 27 if ARCH_CHIP_ESP32H2
@@ -4604,7 +4657,7 @@ if ESPRESSIF_LP_I2C0
 config ESPRESSIF_LPI2C0_SCLPIN
 	int "LPI2C0 SCL Pin"
 	default 7 if ARCH_CHIP_ESP32C6
-	default 4 if ARCH_CHIP_ESP32P4
+	default 8 if ARCH_CHIP_ESP32P4
 	range 7 7 if ARCH_CHIP_ESP32C6
 	range 0 15 if ARCH_CHIP_ESP32P4
 	range 7 7 if ARCH_CHIP_ESP32C6
@@ -4612,7 +4665,7 @@ config ESPRESSIF_LPI2C0_SCLPIN
 config ESPRESSIF_LPI2C0_SDAPIN
 	int "LPI2C0 SDA Pin"
 	default 6 if ARCH_CHIP_ESP32C6
-	default 5 if ARCH_CHIP_ESP32P4
+	default 7 if ARCH_CHIP_ESP32P4
 	range 6 6 if ARCH_CHIP_ESP32C6
 	range 0 15 if ARCH_CHIP_ESP32P4
 	range 6 6 if ARCH_CHIP_ESP32C6

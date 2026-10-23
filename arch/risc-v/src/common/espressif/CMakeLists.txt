@@ -230,21 +230,21 @@ set(ESP_HAL_3RDPARTY_REPO_NAME esp-hal-3rdparty)
 if(DEFINED ENV{ESP_HAL_3RDPARTY_VERSION})
   set(ESP_HAL_3RDPARTY_VERSION
       $ENV{ESP_HAL_3RDPARTY_VERSION}
-      CACHE STRING "ESP HAL 3rdparty version")
+      CACHE STRING "ESP HAL 3rdparty version" FORCE)
 else()
   set(ESP_HAL_3RDPARTY_VERSION
-      cf95a27f2aa263d77c7a8d7f56007abfc899fc47
-      CACHE STRING "ESP HAL 3rdparty version")
+      esp32p4-custom
+      CACHE STRING "ESP HAL 3rdparty version" FORCE)
 endif()
 
 if(DEFINED ENV{ESP_HAL_3RDPARTY_URL})
   set(ESP_HAL_3RDPARTY_URL
       $ENV{ESP_HAL_3RDPARTY_URL}
-      CACHE STRING "ESP HAL 3rdparty URL")
+      CACHE STRING "ESP HAL 3rdparty URL" FORCE)
 else()
   set(ESP_HAL_3RDPARTY_URL
-      https://github.com/espressif/esp-hal-3rdparty.git
-      CACHE STRING "ESP HAL 3rdparty URL")
+      https://github.com/sobinv114/esp-hal-3rdparty.git
+      CACHE STRING "ESP HAL 3rdparty URL" FORCE)
 endif()
 
 option(

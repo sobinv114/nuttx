@@ -58,74 +58,6 @@ uintptr_t _heap_start;
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-
-/****************************************************************************
- * Name: up_allocate_heap
- *
- * Description:
- *   This function will be called to dynamically set aside the heap region.
- *
- *   For the kernel build (CONFIG_BUILD_KERNEL=y) with both kernel and
- *   userspace heaps (CONFIG_MM_KERNEL_HEAP=y), this function provides the
- *   size of the unprotected, userspace heap.
- *
- *   If a protected kernel heap is provided, the kernel heap must be
- *   allocated (and protected) by an analogous up_allocate_kheap().
- *
- * Input Parameters:
- *   None.
- *
- * Output Parameters:
- *   heap_start - Address of the beginning of the (initial) memory region.
- *   heap_size  - The size (in bytes) if the (initial) memory region.
- *
- * Returned Value:
- *   None.
- *
- ****************************************************************************/
-
-void up_allocate_heap(void **heap_start, size_t *heap_size)
-{
-  /* These values come from the linker scripts
-   * (<chip>_<legacy/mcuboot>_sections.ld and <chip>_flat_memory.ld).
-   * Check boards/risc-v/espressif.
-   */
-
-#ifdef CONFIG_ESPRESSIF_RETENTION_HEAP
-  uintptr_t rstart;
-  uintptr_t rend;
-#endif
-#if defined(CONFIG_MM_KERNEL_HEAP) && \
-    defined(CONFIG_ESPRESSIF_SPIRAM) && \
-    defined(CONFIG_ESPRESSIF_SPIRAM_USER_HEAP)
-  uintptr_t ubase;
-  uintptr_t utop;
-#endif
-
-  board_autoled_on(LED_HEAPALLOCATE);
-
-#if defined(CONFIG_MM_KERNEL_HEAP) && \
-    defined(CONFIG_ESPRESSIF_SPIRAM) && \
-    defined(CONFIG_ESPRESSIF_SPIRAM_USER_HEAP)
-  DEBUGASSERT(esp_psram_is_initialized());
-  ubase = esp_psram_extram_vaddr_start();
-  utop  = esp_psram_extram_vaddr_end();
-
-  *heap_start = (void *)ubase;
-  *heap_size  = utop - ubase;
-#else
-  *heap_start = (void *)g_idle_topstack;
-#ifdef CONFIG_ESPRESSIF_RETENTION_HEAP
-  esp_retentionheap_find_region(&rstart, &rend);
-  *heap_size  = (uintptr_t) rstart - g_idle_topstack;
-#else
-  *heap_size  = (uintptr_t)ets_rom_layout_p->dram0_rtos_reserved_start -
-                           g_idle_topstack;
-#endif
-#endif
-  _heap_start = (uintptr_t)*heap_start;
-}
-
 /****************************************************************************
  * Name: up_allocate_kheap
  *
@@ -152,6 +84,9 @@ void up_allocate_kheap(void **heap_start, size_t *heap_size)
 
   esp_retentionheap_find_region(&rstart, &rend);
   ktop = rstart;
+#elif defined(CONFIG_ESP32P4_SELECTS_REV_LESS_V3)
+  /* Rev 1.3 sram_low ends at 0x4ff2cbb0. Stop here to avoid the memory hole! */
+  ktop = 0x4ff2cbb0;
 #else
   ktop = (uintptr_t)ets_rom_layout_p->dram0_rtos_reserved_start;
 #endif
@@ -162,60 +97,57 @@ void up_allocate_kheap(void **heap_start, size_t *heap_size)
 
   *heap_start = (void *)kbase;
   *heap_size  = ktop - kbase;
+
 }
 #endif
+
+
+/****************************************************************************
+ * Name: up_allocate_heap
+ *
+ * Description:
+ *   Region 1: Primary heap in clean 384 KB SRAM_HIGH.
+ ****************************************************************************/
+
+void up_allocate_heap(void **heap_start, size_t *heap_size)
+{
+  board_autoled_on(LED_HEAPALLOCATE);
+
+  /* Start primary heap in fast internal SRAM (384 KB) */
+  *heap_start = (void *)0x4ff40000;
+  *heap_size  = (size_t)(384 * 1024);
+
+  memset(*heap_start, 0, *heap_size);
+  _heap_start = (uintptr_t)*heap_start;
+
+}
 
 /****************************************************************************
  * Name: riscv_addregion
  *
  * Description:
- *   RAM may be added in non-contiguous chunks. This routine adds all chunks
- *   that may be used for heap.
- *
- * Input Parameters:
- *   None.
- *
- * Returned Value:
- *   None.
- *
+ *   Region 2: Add the full 32 MB PSRAM to the unified heap pool.
  ****************************************************************************/
 
 #if CONFIG_MM_REGIONS > 1
 void riscv_addregion(void)
 {
-#if defined(CONFIG_ESP32P4_SELECTS_REV_LESS_V3)
-  /* ESP32-P4 rev < v3 has non-contiguous SRAM: sram_low + sram_high.
-   * The primary heap is in sram_low. Add sram_high as a second region.
-   */
-
-  extern uint8_t _sram_high_heap_start[];
-  extern uint8_t _sram_high_heap_end[];
-
-  size_t region_size = _sram_high_heap_end - _sram_high_heap_start;
-
-  if (region_size > 0)
-    {
-#ifdef CONFIG_MM_KERNEL_HEAP
-      kmm_addregion(_sram_high_heap_start, region_size);
-#else
-      kumm_addregion(_sram_high_heap_start, region_size);
-#endif
-    }
-#endif
-
-#if !defined(CONFIG_MM_KERNEL_HEAP)
-#  if defined(CONFIG_ESPRESSIF_SPIRAM_USER_HEAP)
   if (esp_psram_is_initialized())
     {
-      uintptr_t start = esp_psram_extram_vaddr_start();
-      uintptr_t end = esp_psram_extram_vaddr_end();
+      uintptr_t psram_start = esp_psram_extram_vaddr_start(); // 0x48000000
+      uintptr_t psram_end   = esp_psram_extram_vaddr_end();   // 0x4a000000
+      size_t    psram_size  = psram_end - psram_start;        // 32 MB
 
-      if (end > start)
+      if (psram_size > 0)
         {
-          kumm_addregion((void *)start, end - start);
+          /* Add 32 MB PSRAM to the heap */
+          #ifdef CONFIG_MM_KERNEL_HEAP
+              kumm_addregion((void *)psram_start, psram_size);
+          #else
+              umm_addregion((void *)psram_start, psram_size);
+          #endif
+
         }
     }
-#  endif
-#endif
 }
 #endif

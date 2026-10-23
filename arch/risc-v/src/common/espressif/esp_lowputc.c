@@ -194,6 +194,131 @@ struct esp_uart_s g_uart1_config =
 
 #endif /* CONFIG_ESPRESSIF_UART1 */
 
+
+#ifdef CONFIG_ESPRESSIF_UART2
+
+static uart_hal_context_t g_uart2_hal =
+{
+  .dev = &UART2
+};
+
+struct esp_uart_s g_uart2_config =
+{
+  .cpuint = -ENOMEM,
+  .int_pri = ESP_IRQ_PRIORITY_DEFAULT,
+  .id = 2,
+  .baud = CONFIG_UART2_BAUD,
+  .stop_b2 = CONFIG_UART2_2STOP,
+  .bits = CONFIG_UART2_BITS,
+  .parity = CONFIG_UART2_PARITY,
+  .txpin = CONFIG_ESPRESSIF_UART2_TXPIN,
+  .rxpin = CONFIG_ESPRESSIF_UART2_RXPIN,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rtspin = CONFIG_ESPRESSIF_UART2_RTSPIN,
+#ifdef CONFIG_UART2_IFLOWCONTROL
+  .iflow  = true,
+#else
+  .iflow  = false,
+#endif
+#endif
+#ifdef CONFIG_SERIAL_OFLOWCONTROL
+  .ctspin = CONFIG_ESPRESSIF_UART2_CTSPIN,
+#ifdef CONFIG_UART2_OFLOWCONTROL
+  .oflow  = true,
+#else
+  .oflow  = false,
+#endif
+#endif
+  .clk_src = UART_SCLK_DEFAULT,
+  .hal = &g_uart2_hal,
+  .lock = SP_UNLOCKED
+};
+
+#endif /* CONFIG_ESPRESSIF_UART2 */
+
+#ifdef CONFIG_ESPRESSIF_UART3
+
+static uart_hal_context_t g_uart3_hal =
+{
+  .dev = &UART3
+};
+
+struct esp_uart_s g_uart3_config =
+{
+  .cpuint = -ENOMEM,
+  .int_pri = ESP_IRQ_PRIORITY_DEFAULT,
+  .id = 3,
+  .baud = CONFIG_UART3_BAUD,
+  .stop_b2 = CONFIG_UART3_2STOP,
+  .bits = CONFIG_UART3_BITS,
+  .parity = CONFIG_UART3_PARITY,
+  .txpin = CONFIG_ESPRESSIF_UART3_TXPIN,
+  .rxpin = CONFIG_ESPRESSIF_UART3_RXPIN,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rtspin = CONFIG_ESPRESSIF_UART3_RTSPIN,
+#ifdef CONFIG_UART3_IFLOWCONTROL
+  .iflow  = true,
+#else
+  .iflow  = false,
+#endif
+#endif
+#ifdef CONFIG_SERIAL_OFLOWCONTROL
+  .ctspin = CONFIG_ESPRESSIF_UART3_CTSPIN,
+#ifdef CONFIG_UART3_OFLOWCONTROL
+  .oflow  = true,
+#else
+  .oflow  = false,
+#endif
+#endif
+  .clk_src = UART_SCLK_DEFAULT,
+  .hal = &g_uart3_hal,
+  .lock = SP_UNLOCKED
+};
+
+#endif /* CONFIG_ESPRESSIF_UART3 */
+
+#ifdef CONFIG_ESPRESSIF_UART4
+
+static uart_hal_context_t g_uart4_hal =
+{
+  .dev = &UART4
+};
+
+struct esp_uart_s g_uart4_config =
+{
+  .cpuint = -ENOMEM,
+  .int_pri = ESP_IRQ_PRIORITY_DEFAULT,
+  .id = 4,
+  .baud = CONFIG_UART4_BAUD,
+  .stop_b2 = CONFIG_UART4_2STOP,
+  .bits = CONFIG_UART4_BITS,
+  .parity = CONFIG_UART4_PARITY,
+  .txpin = CONFIG_ESPRESSIF_UART4_TXPIN,
+  .rxpin = CONFIG_ESPRESSIF_UART4_RXPIN,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rtspin = CONFIG_ESPRESSIF_UART4_RTSPIN,
+#ifdef CONFIG_UART4_IFLOWCONTROL
+  .iflow  = true,
+#else
+  .iflow  = false,
+#endif
+#endif
+#ifdef CONFIG_SERIAL_OFLOWCONTROL
+  .ctspin = CONFIG_ESPRESSIF_UART4_CTSPIN,
+#ifdef CONFIG_UART4_OFLOWCONTROL
+  .oflow  = true,
+#else
+  .oflow  = false,
+#endif
+#endif
+  .clk_src = UART_SCLK_DEFAULT,
+  .hal = &g_uart4_hal,
+  .lock = SP_UNLOCKED
+};
+
+#endif /* CONFIG_ESPRESSIF_UART4 */
+
+
 #ifdef CONFIG_ESPRESSIF_LP_UART0
 
 static uart_hal_context_t g_lp_uart0_hal =
@@ -627,6 +752,21 @@ void esp_lowsetup(void)
 #ifdef CONFIG_ESPRESSIF_UART1
   esp_lowputc_uart_module_enable(&g_uart1_config);
   esp_lowputc_config_pins(&g_uart1_config);
+#endif
+
+#ifdef CONFIG_ESPRESSIF_UART2
+  esp_lowputc_uart_module_enable(&g_uart2_config);
+  esp_lowputc_config_pins(&g_uart2_config);
+#endif
+
+#ifdef CONFIG_ESPRESSIF_UART3
+  esp_lowputc_uart_module_enable(&g_uart3_config);
+  esp_lowputc_config_pins(&g_uart3_config);
+#endif
+
+#ifdef CONFIG_ESPRESSIF_UART4
+  esp_lowputc_uart_module_enable(&g_uart4_config);
+  esp_lowputc_config_pins(&g_uart4_config);
 #endif
 
 #ifdef CONFIG_ESPRESSIF_LP_UART0

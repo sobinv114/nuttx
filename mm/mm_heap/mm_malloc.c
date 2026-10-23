@@ -58,6 +58,8 @@
 
 static bool free_delaylist(FAR struct mm_heap_s *heap, bool force)
 {
+  // return false;
+
   bool ret = false;
 #if defined(CONFIG_BUILD_FLAT) || defined(__KERNEL__)
   FAR struct mm_delaynode_s *tmp;

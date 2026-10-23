@@ -156,8 +156,8 @@
 #  define LP_I2C_BUS_CLK_ATOMIC()    PERIPH_RCC_ATOMIC()
 #endif
 
-#define SCL_PIN_ATTR (FUNCTION_2 | INPUT_PULLUP | OUTPUT_OPEN_DRAIN)
-#define SDA_PIN_ATTR (FUNCTION_2 | INPUT_PULLUP | OUTPUT_OPEN_DRAIN)
+#define SCL_PIN_ATTR (FUNCTION_2 || INPUT_PULLUP || OUTPUT_OPEN_DRAIN)
+#define SDA_PIN_ATTR (FUNCTION_2 || INPUT_PULLUP || OUTPUT_OPEN_DRAIN)
 
 /****************************************************************************
  * Private Types
@@ -466,7 +466,8 @@ static struct esp_i2c_priv_s esp_lp_i2c0_priv =
 #endif
   .error      = 0,
   .ready_read = false,
-  .clk_src    = LP_I2C_SCLK_DEFAULT,
+  // .clk_src    = LP_I2C_SCLK_DEFAULT,
+  .clk_src    = (soc_module_clk_t)LP_I2C_SCLK_LP_FAST,
   .clk_freq   = 0,
   .ctx        = &lp_i2c0_ctx,
 #ifdef CONFIG_PM
@@ -799,17 +800,34 @@ static void esp_i2c_init_clock(struct esp_i2c_priv_s *priv,
   i2c_hal_master_set_scl_timeout_val(priv->ctx, SCL_TIMEOUT_VAL_US,
                                      src_clk_frequency);
 
-#ifdef CONFIG_ESPRESSIF_LPI2C
-  LP_I2C_SRC_CLK_ATOMIC()
+// #ifdef CONFIG_ESPRESSIF_LPI2C
+//   LP_I2C_SRC_CLK_ATOMIC()
+//     {
+//       lp_i2c_ll_set_source_clk(priv->ctx->dev, priv->clk_src);
+//     }
+// #else
+//   I2C_CLOCK_SRC_ATOMIC()
+//     {
+//       i2c_ll_set_source_clk(priv->ctx->dev, priv->clk_src);
+//     }
+// #endif
+
+#ifdef CONFIG_ESPRESSIF_LP_I2C0
+  if (priv->id >= ESP_LP_I2C0_ID)
     {
-      lp_i2c_ll_set_source_clk(priv->ctx->dev, priv->clk_src);
+      LP_I2C_SRC_CLK_ATOMIC()
+        {
+          lp_i2c_ll_set_source_clk(priv->ctx->dev, LP_I2C_SCLK_LP_FAST);
+        }
     }
-#else
-  I2C_CLOCK_SRC_ATOMIC()
-    {
-      i2c_ll_set_source_clk(priv->ctx->dev, priv->clk_src);
-    }
+  else
 #endif
+    {
+      I2C_CLOCK_SRC_ATOMIC()
+        {
+          i2c_ll_set_source_clk(priv->ctx->dev, priv->clk_src);
+        }
+    }
 
   i2c_ll_update(priv->ctx->dev);
   priv->clk_freq = bus_freq;
@@ -1064,7 +1082,7 @@ static int esp_i2c_polling_waitdone(struct esp_i2c_priv_s *priv)
    * and an error didn't occur within the timeout
    */
 
-  while ((int32_t)(current - timeout) < 0 && priv->error == 0)
+  while (current - timeout < 0 && priv->error == 0)
     {
       /* Check if any interrupt triggered, clear them
        * process the operation.
@@ -1264,7 +1282,7 @@ static int esp_i2c_transfer(struct i2c_master_s *dev,
         }
 #endif
 
-      i2cinfo("Message %" PRIu8 " transfer complete.\n", priv->msgid);
+        i2cinfo("Message %" PRIu8 " transfer complete.\n", priv->msgid);
     }
 
   /* Dump the trace result */
@@ -1300,7 +1318,6 @@ static void esp_i2c_clear_bus(struct esp_i2c_priv_s *priv)
 
   clock_t start = clock_systime_ticks();
   clock_t timeout = start + MSEC2TICK(I2C_CLR_BUS_TIMEOUT_MS);
-
   while (i2c_ll_master_is_bus_clear_done(priv->ctx->dev))
     {
       if (clock_systime_ticks() >= timeout)
@@ -1590,7 +1607,6 @@ static inline void esp_i2c_process(struct esp_i2c_priv_s *priv,
   struct i2c_msg_s *msg = &priv->msgv[priv->msgid];
 #ifdef CONFIG_I2C_TRACE
   uint32_t status = 0;
-
   status = GET_STATUS(priv->ctx->dev);
 #endif
   /* Check for any errors */
@@ -1709,22 +1725,22 @@ struct i2c_master_s *esp_i2cbus_initialize(int port)
   switch (port)
     {
 #ifdef CONFIG_ESPRESSIF_I2C0_MASTER_MODE
-      case ESPRESSIF_I2C0:
-        priv = &esp_i2c0_priv;
-        break;
+    case ESPRESSIF_I2C0:
+      priv = &esp_i2c0_priv;
+      break;
 #endif
 #ifdef CONFIG_ESPRESSIF_I2C1_MASTER_MODE
-      case ESPRESSIF_I2C1:
-        priv = &esp_i2c1_priv;
-        break;
+    case ESPRESSIF_I2C1:
+      priv = &esp_i2c1_priv;
+      break;
 #endif
 #ifdef CONFIG_ESPRESSIF_LP_I2C0
-      case ESPRESSIF_LP_I2C0:
-        priv = &esp_lp_i2c0_priv;
-        break;
+    case ESPRESSIF_LP_I2C0:
+      priv = &esp_lp_i2c0_priv;
+      break;
 #endif
-      default:
-        return NULL;
+    default:
+      return NULL;
     }
 
   nxmutex_lock(&priv->lock);

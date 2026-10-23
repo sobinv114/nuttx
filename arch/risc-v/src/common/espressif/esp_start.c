@@ -100,7 +100,8 @@
 #  ifdef CONFIG_ESPRESSIF_BOOTLOADER_MCUBOOT
 #    define PRIMARY_SLOT_OFFSET   CONFIG_ESPRESSIF_OTA_PRIMARY_SLOT_OFFSET
 #  else
-#    define PRIMARY_SLOT_OFFSET   0  /* Force offset to the beginning of the whole image */
+// #    define PRIMARY_SLOT_OFFSET   0  /* Force offset to the beginning of the whole image */
+#    define PRIMARY_SLOT_OFFSET   0
 #  endif
 #  define HDR_ATTR              __attribute__((section(".entry_addr"))) \
                                 __attribute__((used))
@@ -494,11 +495,16 @@ void sys_startup_fn(void)
  * Name: __esp_start
  ****************************************************************************/
 
-void __esp_start(void)
+// // void __esp_start(void)
+
+void IRAM_ATTR __esp_start(void)
 {
   esp_err_t ret;
 
+  ets_printf("Starting __esp_start\n");
+
   esp_cpu_intr_set_ivt_addr(&_vector_table);
+
 
 #if SOC_INT_CLIC_SUPPORTED
   /* When hardware vectored interrupts are enabled in CLIC,
@@ -679,7 +685,11 @@ void __esp_start(void)
 
   /* Initialize onboard resources */
 
+  ets_printf("Starting esp_board_initialize\n");
+
   esp_board_initialize();
+
+  ets_printf("Done esp_board_initialize\n");
 
   showprogress("D");
 
@@ -689,3 +699,5 @@ void __esp_start(void)
 
   for (; ; );
 }
+
+

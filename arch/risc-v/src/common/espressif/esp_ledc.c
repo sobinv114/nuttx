@@ -330,6 +330,16 @@ static struct esp_ledc_chan_s g_ledc_chans[LEDC_CHANNELS] =
   {
     .num       = 5,
     .pin       = CONFIG_ESPRESSIF_LEDC_CHANNEL5_PIN
+  },
+#endif
+#if LEDC_CHANNELS > 6
+  {
+    .num       = 6,
+    .pin       = CONFIG_ESPRESSIF_LEDC_CHANNEL6_PIN
+  },
+  {
+    .num       = 7,
+    .pin       = CONFIG_ESPRESSIF_LEDC_CHANNEL7_PIN
   }
 #endif
 };

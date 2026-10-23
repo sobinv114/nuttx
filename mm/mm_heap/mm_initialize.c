@@ -279,6 +279,14 @@ mm_initialize_heap(FAR const struct mm_heap_config_s *config)
       heap->mm_nodelist[i].blink     = &heap->mm_nodelist[i - 1];
     }
 
+
+  #if CONFIG_MM_FREE_DELAYCOUNT_MAX > 0
+    for (i = 0; i < CONFIG_SMP_NCPUS; i++)
+      {
+        sq_init(&heap->mm_delaylist[i]);
+      }
+  #endif
+
   /* Initialize the malloc mutex to one (to support one-at-
    * a-time access to private data sets).
    */

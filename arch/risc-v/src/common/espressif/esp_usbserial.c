@@ -223,19 +223,66 @@ static void esp_shutdown(struct uart_dev_s *dev)
  *
  ****************************************************************************/
 
+// static void esp_txint(struct uart_dev_s *dev, bool enable)
+// {
+//   usb_serial_jtag_ll_txfifo_flush();
+
+//   if (enable)
+//     {
+//       usb_serial_jtag_ll_ena_intr_mask(
+//         USB_SERIAL_JTAG_INTR_SERIAL_IN_EMPTY);
+//     }
+//   else
+//     {
+//       usb_serial_jtag_ll_disable_intr_mask(
+//         USB_SERIAL_JTAG_INTR_SERIAL_IN_EMPTY);
+//     }
+// }
+
+
 static void esp_txint(struct uart_dev_s *dev, bool enable)
 {
-  usb_serial_jtag_ll_txfifo_flush();
-
   if (enable)
     {
-      usb_serial_jtag_ll_ena_intr_mask(
-        USB_SERIAL_JTAG_INTR_SERIAL_IN_EMPTY);
+      /* Check if the USB FIFO has space */
+      if (usb_serial_jtag_ll_txfifo_writable())
+        {
+          uart_xmitchars(dev);
+          usb_serial_jtag_ll_ena_intr_mask(USB_SERIAL_JTAG_INTR_SERIAL_IN_EMPTY);
+        }
+      else
+        {
+          /* FIFO is full. Wait briefly to see if a PC host reads it */
+          int timeout = 100;
+          while (!usb_serial_jtag_ll_txfifo_writable() && --timeout > 0)
+            {
+              up_udelay(10);
+            }
+
+          if (usb_serial_jtag_ll_txfifo_writable())
+            {
+              uart_xmitchars(dev);
+              usb_serial_jtag_ll_ena_intr_mask(USB_SERIAL_JTAG_INTR_SERIAL_IN_EMPTY);
+            }
+          else
+            {
+              /* NO TERMINAL IS LISTENING!
+               * Discard the buffer so NuttX does NOT block the boot script!
+               */
+              dev->xmit.tail = dev->xmit.head;
+
+              int val;
+              if (nxsem_get_value(&dev->xmitsem, &val) == OK && val < 1)
+                {
+                  nxsem_post(&dev->xmitsem);
+                }
+              return;
+            }
+        }
     }
   else
     {
-      usb_serial_jtag_ll_disable_intr_mask(
-        USB_SERIAL_JTAG_INTR_SERIAL_IN_EMPTY);
+      usb_serial_jtag_ll_disable_intr_mask(USB_SERIAL_JTAG_INTR_SERIAL_IN_EMPTY);
     }
 }
 
@@ -362,10 +409,37 @@ static bool esp_rxavailable(struct uart_dev_s *dev)
  *
  ****************************************************************************/
 
+// static bool esp_txready(struct uart_dev_s *dev)
+// {
+//   return (bool)usb_serial_jtag_ll_txfifo_writable();
+// }
+
 static bool esp_txready(struct uart_dev_s *dev)
 {
-  return (bool)usb_serial_jtag_ll_txfifo_writable();
+  /* If the hardware FIFO is writable, return true immediately */
+  if (usb_serial_jtag_ll_txfifo_writable())
+    {
+      return true;
+    }
+
+  /* If not writable, don't stall NuttX forever.
+   * Check if it frees up within a short period; if not, return true so
+   * the driver drops the character and continues booting!
+   */
+  for (int i = 0; i < 50; i++)
+    {
+      up_udelay(10);
+      if (usb_serial_jtag_ll_txfifo_writable())
+        {
+          return true;
+        }
+    }
+
+  /* No host reading: flush and report ready so boot doesn't lock up */
+  usb_serial_jtag_ll_txfifo_flush();
+  return true;
 }
+
 
 /****************************************************************************
  * Name: esp_send
@@ -375,19 +449,33 @@ static bool esp_txready(struct uart_dev_s *dev)
  *
  ****************************************************************************/
 
+// static void esp_send(struct uart_dev_s *dev, int ch)
+// {
+//   /* Write the character to the buffer. */
+
+//   uint8_t buf[1] = {
+//     (uint8_t)ch
+//   };
+
+//   usb_serial_jtag_ll_write_txfifo(buf, sizeof(buf));
+
+//   /* Flush the character out. */
+
+//   usb_serial_jtag_ll_txfifo_flush();
+// }
+
+
 static void esp_send(struct uart_dev_s *dev, int ch)
 {
-  /* Write the character to the buffer. */
-
   uint8_t buf[1] = {
     (uint8_t)ch
   };
 
-  usb_serial_jtag_ll_write_txfifo(buf, sizeof(buf));
-
-  /* Flush the character out. */
-
-  usb_serial_jtag_ll_txfifo_flush();
+  if (usb_serial_jtag_ll_txfifo_writable())
+    {
+      usb_serial_jtag_ll_write_txfifo(buf, sizeof(buf));
+      usb_serial_jtag_ll_txfifo_flush();
+    }
 }
 
 /****************************************************************************
@@ -475,9 +563,27 @@ static int esp_ioctl(struct file *filep, int cmd, unsigned long arg)
  *
  ****************************************************************************/
 
+// void esp_usbserial_write(char ch)
+// {
+//   while (!esp_txready(&g_uart_usbserial));
+
+//   esp_send(&g_uart_usbserial, ch);
+// }
+
+
 void esp_usbserial_write(char ch)
 {
-  while (!esp_txready(&g_uart_usbserial));
+  int timeout = 200;
+
+  while (!usb_serial_jtag_ll_txfifo_writable())
+    {
+      if (--timeout <= 0)
+        {
+          /* Host is not connected or not reading: drop byte and return! */
+          return;
+        }
+      up_udelay(10);
+    }
 
   esp_send(&g_uart_usbserial, ch);
 }

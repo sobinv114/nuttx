@@ -3331,6 +3331,11 @@ int cdcacm_classobject(int minor, FAR struct usbdev_devinfo_s *devinfo,
 #endif
   priv->serdev.ops          = &g_uartops;
   priv->serdev.priv         = priv;
+#ifdef CONFIG_SERIAL_TERMIOS
+  priv->serdev.tc_iflag     = ICRNL;
+  priv->serdev.tc_oflag     = OPOST | ONLCR;
+  priv->serdev.tc_lflag     = ECHO | ECHOE | ECHOK | ICANON;
+#endif
 
   /* Initialize the USB class driver structure */
 #if defined(CONFIG_USBDEV_SUPERSPEED)

@@ -92,6 +92,9 @@ typedef struct
 
 extern struct esp_uart_s g_uart0_config;
 extern struct esp_uart_s g_uart1_config;
+extern struct esp_uart_s g_uart2_config;
+extern struct esp_uart_s g_uart3_config;
+extern struct esp_uart_s g_uart4_config;
 extern struct esp_uart_s g_lp_uart0_config;
 
 /****************************************************************************

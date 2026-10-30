@@ -41,10 +41,10 @@
 #include <nuttx/arch.h>
 #include <nuttx/irq.h>
 #include <nuttx/clock.h>
-#include <nuttx/kmalloc.h>
 #include <nuttx/mutex.h>
 #include <nuttx/spi/spi.h>
 #include <nuttx/nuttx.h>
+#include <nuttx/kmalloc.h>
 
 #include <arch/board/board.h>
 
@@ -94,12 +94,7 @@
 #  define MISO_PIN_ATTR (INPUT_FUNCTION_2 | PULLUP)
 #endif
 
-#if defined(CONFIG_ARCH_CHIP_ESP32C2)
-#define SPI2_IOMUX_MISOPIN  2
-#define SPI2_IOMUX_MOSIPIN  7
-#define SPI2_IOMUX_CLKPIN   6
-#define SPI2_IOMUX_CSPIN    10
-#elif defined(CONFIG_ARCH_CHIP_ESP32C3)
+#if defined(CONFIG_ARCH_CHIP_ESP32C3)
 #define SPI2_IOMUX_MISOPIN  2
 #define SPI2_IOMUX_MOSIPIN  7
 #define SPI2_IOMUX_CLKPIN   6
@@ -1074,7 +1069,6 @@ static void esp_spi_dma_exchange(struct esp_spi_priv_s *priv,
 #if SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE
   esp_err_t ret = esp_cache_msync((void *)txbuffer_temp,
                                   tx_byte_len, ESP_CACHE_MSYNC_FLAG_DIR_C2M);
-
   assert(ret == ESP_OK);
 #endif
 
@@ -1351,6 +1345,13 @@ static void esp_spi_poll_exchange(struct esp_spi_priv_s *priv,
                   transfer_size, tp);
         }
 
+
+#if defined(CONFIG_ESPRESSIF_SPI2_DMA) || defined(CONFIG_ESPRESSIF_SPI3_DMA)
+      /* Disable interrupt so ISR doesn't steal the TRANS_DONE flag from polling */
+      spi_ll_disable_int(priv->ctx->hw);
+      spi_ll_clear_intr(priv->ctx->hw, SPI_LL_INTR_TRANS_DONE);
+#endif
+
       spi_hal_setup_trans(priv->ctx, priv->dev_cfg, &trans);
       spi_hal_push_tx_buffer(priv->ctx, &trans);
       spi_hal_user_start(priv->ctx);
@@ -1360,6 +1361,12 @@ static void esp_spi_poll_exchange(struct esp_spi_priv_s *priv,
                                !!trans.rcv_buffer);
 
       while (!spi_hal_usr_is_done(priv->ctx));
+
+#if defined(CONFIG_ESPRESSIF_SPI2_DMA) || defined(CONFIG_ESPRESSIF_SPI3_DMA)
+      /* Clear the done flag and re-enable interrupt for DMA */
+      spi_ll_clear_intr(priv->ctx->hw, SPI_LL_INTR_TRANS_DONE);
+      spi_ll_enable_int(priv->ctx->hw);
+#endif
 
       if (rp != NULL)
         {
@@ -1651,22 +1658,21 @@ static void esp_spi_init(struct spi_dev_s *dev)
           spi_ll_enable_clock(priv->id, true);
         }
 
+/* Always initialize HAL context so polling mode works for <= 64 bytes */
+      spi_hal_init(priv->ctx, priv->id);
+
 #if defined(CONFIG_ESPRESSIF_SPI2_DMA) || defined(CONFIG_ESPRESSIF_SPI3_DMA)
       esp_spi_dma_init(dev);
 
-      priv->ctx->hw = SPI_LL_GET_HW(priv->id);
-
-      spi_ll_master_init(priv->ctx->hw);
       spi_ll_enable_int(priv->ctx->hw);
       spi_ll_set_mosi_delay(priv->ctx->hw, 0, 0);
-#else
-      spi_hal_init(priv->ctx, priv->id);
 #endif
 
       esp_spi_setbits(dev, config->width);
       esp_spi_setmode(dev, priv->dev_cfg->mode);
       esp_spi_setfrequency(dev, priv->timing_param->expected_freq);
     }
+
 #ifdef CONFIG_ESPRESSIF_LPSPI0
   else
     {

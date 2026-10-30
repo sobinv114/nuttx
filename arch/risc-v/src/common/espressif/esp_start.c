@@ -506,6 +506,22 @@ void IRAM_ATTR __esp_start(void)
   esp_cpu_intr_set_ivt_addr(&_vector_table);
 
 
+  /* ========================================================== */
+  /* ADD THIS BLOCK HERE: Enable Hardware FPU in RISC-V Core    */
+  /* ========================================================== */
+#ifdef CONFIG_ARCH_FPU
+  ets_printf("[BOOT] Enabling RISC-V FPU in mstatus CSR...\n");
+  asm volatile(
+      "csrs mstatus, %0\n"
+      :
+      : "r"(1 << 13) /* MSTATUS_FS_INITIAL = 0x00002000 */
+      : "memory"
+  );
+  ets_printf("[BOOT] RISC-V FPU Enabled!\n");
+#endif
+  /* ========================================================== */
+
+
 #if SOC_INT_CLIC_SUPPORTED
   /* When hardware vectored interrupts are enabled in CLIC,
    * the CPU jumps to this base address + 4 * interrupt_id.
